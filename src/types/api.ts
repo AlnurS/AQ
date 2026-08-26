@@ -126,6 +126,10 @@ export interface MonitoringObservation {
   total_pixel_count: number;
   ndvi: number | null;
   ndmi: number | null;
+  ndvi_baseline: number | null;
+  ndmi_baseline: number | null;
+  ndvi_anomaly: number | null;
+  ndmi_anomaly: number | null;
   precipitation_mm: number | null;
   precipitation_anomaly: number | null;
   temperature_c: number | null;
