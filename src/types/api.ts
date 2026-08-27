@@ -72,6 +72,28 @@ export interface ApiErrorShape {
 export type MonitoringRiskLevel = "low" | "medium" | "high" | "critical";
 export type MonitoringTrend = "improving" | "stable" | "worsening" | "insufficient_data";
 export type DataQuality = "complete" | "partial" | "segmentation_only";
+export type RecommendationSeverity = "info" | "warning" | "danger";
+export type RecommendationPriority = "low" | "medium" | "high";
+
+export interface RecommendationDriver {
+  key: string;
+  severity: RecommendationSeverity;
+  title: string;
+  detail: string;
+}
+
+export interface RecommendationItem {
+  key: string;
+  priority: RecommendationPriority;
+  title: string;
+  detail: string;
+}
+
+export interface RecommendationSet {
+  drivers: RecommendationDriver[];
+  recommendations: RecommendationItem[];
+  disclaimer: string;
+}
 
 export interface MonitoringLocation {
   id: string;
@@ -152,6 +174,7 @@ export interface MonitoringObservation {
   preview_url: string;
   overlay_url: string;
   inference_run: MonitoringRun | null;
+  recommendations: RecommendationSet | null;
 }
 
 export interface AnalyzeMonitoringResponse {
@@ -166,6 +189,7 @@ export interface AnalyzeMonitoringResponse {
   data_quality: DataQuality;
   preview_url: string;
   overlay_url: string;
+  recommendations: RecommendationSet | null;
 }
 
 export interface TimelineSummary {
