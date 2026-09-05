@@ -1,12 +1,10 @@
-import { Activity, BrainCircuit, Droplets, LayoutDashboard, Menu, Plane, X } from "lucide-react";
+import { Activity, Droplets, Map, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
 const navigation = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/monitoring", label: "Мониторинг", icon: Activity, end: false },
-  { to: "/drone-targets", label: "Drone Targets", icon: Plane, end: false },
-  { to: "/model", label: "Model", icon: BrainCircuit, end: false },
+  { to: "/national-map", label: "Карта Казахстана", icon: Map, end: false },
 ];
 
 function navClass(isActive: boolean): string {

@@ -13,6 +13,9 @@ import type {
   MonitoringLocation,
   SeasonalOutlookResponse,
   TimelineResponse,
+  NationalGridCell,
+  NationalGridFilters,
+  NationalGridSummary,
 } from "../types/api";
 
 export async function getRiskSummary(): Promise<RiskSummary> {
@@ -77,5 +80,19 @@ export async function getMonitoringOutlook(locationId: string): Promise<Seasonal
 
 export async function backfillMonitoringLocation(locationId: string, startDate: string, endDate: string): Promise<BackfillResponse> {
   const { data } = await apiClient.post<BackfillResponse>(`/api/monitoring/locations/${locationId}/backfill`, { start_date: startDate, end_date: endDate, enrich: false, force: false });
+  return data;
+}
+
+export async function getNationalGrid(filters: NationalGridFilters): Promise<NationalGridCell[]> {
+  const { data } = await apiClient.get<NationalGridCell[]>("/api/monitoring/national-grid", {
+    params: { year: filters.year, month: filters.month, grid_version: filters.gridVersion || undefined, risk_level: filters.riskLevel || undefined, data_quality: filters.dataQuality || undefined, has_observation: filters.hasObservation === "" ? undefined : filters.hasObservation },
+  });
+  return data;
+}
+
+export async function getNationalGridSummary(filters: Pick<NationalGridFilters, "year" | "month" | "gridVersion">): Promise<NationalGridSummary> {
+  const { data } = await apiClient.get<NationalGridSummary>("/api/monitoring/national-grid/summary", {
+    params: { year: filters.year, month: filters.month, grid_version: filters.gridVersion || undefined },
+  });
   return data;
 }

@@ -68,14 +68,14 @@ function BackfillPanel({ locationId }: { locationId: string | null }) {
 export function MonitoringPage() {
   const queryClient = useQueryClient();
   const locationsQuery = useQuery({ queryKey: ["monitoring-locations"], queryFn: getMonitoringLocations });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => window.sessionStorage.getItem("aqua-kz-selected-location"));
   const [showForm, setShowForm] = useState(false);
   const [year, setYear] = useState(2024);
   const [month, setMonth] = useState(8);
   const [analysisResult, setAnalysisResult] = useState<MonitoringObservation | null>(null);
   const locations = (locationsQuery.data ?? []).filter((location) => location.active);
   const selectedLocation = locations.find((location) => location.id === selectedId) ?? null;
-  useEffect(() => { if (!selectedId && locations[0]) setSelectedId(locations[0].id); if (selectedId && !locations.some((location) => location.id === selectedId)) setSelectedId(locations[0]?.id ?? null); }, [locations, selectedId]);
+  useEffect(() => { if (!locationsQuery.isSuccess) return; window.sessionStorage.removeItem("aqua-kz-selected-location"); if (!selectedId && locations[0]) setSelectedId(locations[0].id); if (selectedId && !locations.some((location) => location.id === selectedId)) setSelectedId(locations[0]?.id ?? null); }, [locations, locationsQuery.isSuccess, selectedId]);
   const latestQuery = useQuery({ queryKey: ["monitoring-latest", selectedId], queryFn: () => getMonitoringLatest(selectedId!), enabled: Boolean(selectedId), retry: false });
   const timelineQuery = useQuery({ queryKey: ["monitoring-timeline", selectedId], queryFn: () => getMonitoringTimeline(selectedId!), enabled: Boolean(selectedId) });
   const outlookQuery = useQuery({ queryKey: ["monitoring-outlook", selectedId], queryFn: () => getMonitoringOutlook(selectedId!), enabled: Boolean(selectedId) });

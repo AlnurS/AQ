@@ -229,3 +229,62 @@ export interface BackfillResponse {
   failed: number;
   periods: string[];
 }
+
+export type NationalGridStatus = "ready" | "missing" | "failed" | "stale";
+export type NationalGridAssessmentMode = "preliminary_segmentation_signal" | "multi_signal_risk" | "no_data";
+
+export interface NationalGridCell {
+  cell_id: string;
+  grid_version: string;
+  latitude: number;
+  longitude: number;
+  cell_size_degrees: number;
+  bounds: { south: number; west: number; north: number; east: number };
+  geometry: { type: "Polygon"; coordinates: number[][][] } | null;
+  status: NationalGridStatus;
+  failure_reason: string | null;
+  provenance: Record<string, string> | null;
+  updated_at: string | null;
+  is_screening_cell: true;
+  disclaimer_key: string;
+  disclaimer: string;
+  assessment_mode: NationalGridAssessmentMode;
+  confidence_label: string;
+  risk_score: number | null;
+  risk_level: MonitoringRiskLevel | null;
+  trend: MonitoringTrend | null;
+  data_quality: DataQuality | null;
+  drought_fraction: number | null;
+  ndvi: number | null;
+  ndmi: number | null;
+  ndvi_anomaly: number | null;
+  ndmi_anomaly: number | null;
+  precipitation_anomaly: number | null;
+  temperature_anomaly: number | null;
+  explanation: string | null;
+  drivers: RecommendationDriver[];
+  observed_at: string | null;
+  analysis_metadata: Record<string, string> | null;
+}
+
+export interface NationalGridSummary {
+  grid_version: string;
+  year: number;
+  month: number;
+  total_configured_cells: number;
+  ready: number;
+  missing: number;
+  failed: number;
+  stale: number;
+  risk_counts: Record<"low" | "medium" | "high" | "critical", number>;
+  most_recent_update: string | null;
+}
+
+export interface NationalGridFilters {
+  year: number;
+  month: number;
+  gridVersion?: string;
+  riskLevel?: MonitoringRiskLevel | "";
+  dataQuality?: DataQuality | "";
+  hasObservation?: boolean | "";
+}

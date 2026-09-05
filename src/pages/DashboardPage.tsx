@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getRiskSummary, getRiskZones } from "../api/endpoints";
 import { DashboardHeader } from "../components/DashboardHeader";
+import { DemoDataNotice } from "../components/DemoDataNotice";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { MetricsCards } from "../components/MetricsCards";
@@ -22,6 +23,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <DashboardHeader />
+      <DemoDataNotice />
       <MetricsCards summary={summaryQuery.data} />
       <div className="grid gap-6 xl:grid-cols-[1.55fr_0.95fr]"><RiskMap observations={zonesQuery.data} /><RiskDistributionChart summary={summaryQuery.data} /></div>
       <ObservationTable observations={[...zonesQuery.data].sort((first, second) => second.date.localeCompare(first.date))} />
