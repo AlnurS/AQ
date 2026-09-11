@@ -3,6 +3,9 @@ import { AlertTriangle, Info, MapPinned, Satellite } from "lucide-react";
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 
 import { getNationalGrid, getNationalGridSummary } from "../api/endpoints";
+import { EmptyState } from "../components/EmptyState";
+import { ErrorState } from "../components/ErrorState";
+import { PageLoader } from "../components/PageLoader";
 import type { NationalGridCell, NationalGridSummary } from "../types/api";
 import { formatCoordinate, formatPercent } from "../utils/formatters";
 
@@ -37,10 +40,10 @@ function getRiskLevelLabel(level: NationalGridCell["risk_level"]): string {
 }
 
 function getCellSignalInfo(cell: NationalGridCell) {
-  const score = cell.risk_score ?? cell.drought_fraction ?? 0;
-  const scorePercent = score > 0 ? formatPercent(score) : "0%";
-  if (cell.is_screening_cell && cell.data_quality === "segmentation_only") {
-    const preliminaryLevel = score >= 0.75 || cell.risk_level === "high" || cell.risk_level === "critical" ? "высокий" : score >= 0.4 ? "средний" : "низкий";
+  const score = cell.risk_score ?? cell.drought_fraction;
+  const scorePercent = score != null ? formatPercent(score) : "—";
+  if (cell.assessment_mode === "preliminary_segmentation_signal") {
+    const preliminaryLevel = score != null && (score >= 0.75 || cell.risk_level === "high" || cell.risk_level === "critical") ? "высокий" : score != null && score >= 0.4 ? "средний" : "низкий";
     return {
       header: "Сигнал сегментации",
       value: scorePercent,
@@ -87,7 +90,7 @@ function getPathOptions(cell: NationalGridCell) {
 
 function CellMarker({ cell }: { cell: NationalGridCell }) {
   const signal = getCellSignalInfo(cell);
-  const riskText = cell.status !== "ready" ? "Нет данных" : cell.data_quality === "segmentation_only" ? "Сигнал сегментации" : `Риск: ${getRiskLevelLabel(cell.risk_level)}`;
+  const riskText = cell.status !== "ready" ? "Нет данных" : cell.assessment_mode === "preliminary_segmentation_signal" ? "Сигнал сегментации" : `Риск: ${getRiskLevelLabel(cell.risk_level)}`;
 
   return (
     <CircleMarker center={[cell.latitude, cell.longitude]} radius={cell.status === "ready" ? 10 : 8} pathOptions={getPathOptions(cell)}>
@@ -100,7 +103,7 @@ function CellMarker({ cell }: { cell: NationalGridCell }) {
             </span>
           </div>
 
-          {cell.is_screening_cell && cell.data_quality === "segmentation_only" ? (
+          {cell.assessment_mode === "preliminary_segmentation_signal" ? (
             <>
               <p><strong>Сигнал сегментации:</strong> {signal.value}</p>
               <p><strong>Предварительный уровень:</strong> {signal.preliminary.replace("Предварительный уровень: ", "")}</p>
@@ -108,8 +111,8 @@ function CellMarker({ cell }: { cell: NationalGridCell }) {
             </>
           ) : (
             <>
-              <p><strong>Риск:</strong> {riskText}</p>
-              <p><strong>Риск:</strong> {signal.value}</p>
+              <p><strong>Оценка:</strong> {riskText}</p>
+              {cell.status === "ready" ? <p><strong>Риск:</strong> {signal.value}</p> : null}
             </>
           )}
           <p><strong>Качество данных:</strong> {translateQuality(cell.data_quality)}</p>
@@ -144,7 +147,7 @@ function NationalGridSummaryCard({ summary, cells }: { summary: NationalGridSumm
     (cell) => cell.status === "ready" && cell.data_quality === "segmentation_only" && (cell.risk_level === "high" || cell.risk_level === "critical"),
   ).length;
   const highCount = (summary?.risk_counts.high ?? 0) + (summary?.risk_counts.critical ?? 0);
-  const summaryTitle = preliminaryHighSignalCount > 0 ? "Высокие предварительные сигналы" : "Высокий риск";
+  const summaryTitle = preliminaryHighSignalCount > 0 ? "Высокие предварительные сигналы" : "Высокий риск среди готовых ячеек";
   const tooltip = "Количество ячеек с высоким сигналом сегментации или высоким риском среди подготовленных данных.";
 
   return (
@@ -188,13 +191,19 @@ export function NationalMapPage() {
   const summary = summaryQuery.data;
   const readyCells = cells.filter((cell) => cell.status === "ready");
 
+  if (cellsQuery.isLoading || summaryQuery.isLoading) return <PageLoader label="Загружаем национальный скрининг…" />;
+  if (cellsQuery.error || summaryQuery.error) {
+    const error = cellsQuery.error ?? summaryQuery.error;
+    return <ErrorState message={error instanceof Error ? error.message : "Не удалось загрузить национальный скрининг."} onRetry={() => { void cellsQuery.refetch(); void summaryQuery.refetch(); }} />;
+  }
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 border-b border-slate-800 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200"><Satellite className="h-4 w-4" aria-hidden="true" />AQUA KZ</p>
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Национальный скрининг по ячейкам</h1>
-          <p className="mt-2 text-sm text-slate-400">Крупномасштабный экранный слой: не диагностика конкретного поля, а приоритезация проверки на уровне сетки.</p>
+          <p className="mt-2 max-w-3xl text-sm text-slate-400">Частичное покрытие: доступны результаты только обработанных ячеек. Остальная территория не считается зоной низкого риска и требует отдельной обработки.</p>
         </div>
         <div className="inline-flex items-center gap-2 self-start rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-100">
           <MapPinned className="h-4 w-4" aria-hidden="true" />
@@ -202,7 +211,7 @@ export function NationalMapPage() {
         </div>
       </header>
 
-      {summary ? <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4" aria-label="Метаданные национального скрининга"><div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4"><div><p className="text-xs text-slate-400">Период</p><p className="mt-1 font-semibold text-white">{summary.year} · {String(summary.month).padStart(2, "0")}</p></div><div><p className="text-xs text-slate-400">Версия сетки</p><p className="mt-1 font-semibold text-white">{summary.grid_version}</p></div><div><p className="text-xs text-slate-400">Последнее обновление</p><p className="mt-1 font-semibold text-white">{summary.most_recent_update ? formatRussianDate(summary.most_recent_update.slice(0, 10)) : "—"}</p></div><div><p className="text-xs text-slate-400">Сигналы</p><p className="mt-1 font-semibold text-white">{cells.filter((cell) => cell.status === "ready" && cell.data_quality === "segmentation_only").length} предварительных · {cells.filter((cell) => cell.status === "ready" && cell.data_quality !== "segmentation_only").length} многосигнальных</p></div></div><p className="mt-3 text-xs leading-5 text-slate-400">Состояния ячеек: готово {summary.ready}, нет данных {summary.missing}, ошибка {summary.failed}, устарело {summary.stale}. Предварительные сигналы сегментации отображаются отдельно от многосигнального риска.</p></section> : null}
+      {summary ? <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4" aria-label="Метаданные национального скрининга"><div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5"><div><p className="text-xs text-slate-400">Период</p><p className="mt-1 font-semibold text-white">{summary.year} · {String(summary.month).padStart(2, "0")}</p></div><div><p className="text-xs text-slate-400">Версия сетки</p><p className="mt-1 font-semibold text-white">{summary.grid_version}</p></div><div><p className="text-xs text-slate-400">Последнее обновление</p><p className="mt-1 font-semibold text-white">{summary.most_recent_update ? formatRussianDate(summary.most_recent_update.slice(0, 10)) : "—"}</p></div><div><p className="text-xs text-slate-400">Обработано</p><p className="mt-1 font-semibold text-white">{summary.ready} из {summary.total_configured_cells}</p></div><div><p className="text-xs text-slate-400">Сигналы</p><p className="mt-1 font-semibold text-white">{cells.filter((cell) => cell.assessment_mode === "preliminary_segmentation_signal").length} предварительных · {cells.filter((cell) => cell.assessment_mode === "multi_signal_risk").length} многосигнальных</p></div></div><p className="mt-3 text-xs leading-5 text-slate-400">Состояния ячеек: готово {summary.ready}, не обработано {summary.missing}, ошибка {summary.failed}, устарело {summary.stale}. Серые ячейки означают отсутствие доступного результата, а не низкий риск.</p></section> : null}
 
       <NationalGridSummaryCard summary={summary} cells={cells} />
 
@@ -210,7 +219,7 @@ export function NationalMapPage() {
         <div className="flex items-center justify-between gap-3 border-b border-slate-800 px-5 py-4">
           <div>
             <h2 className="font-semibold text-white">Скрининговая карта Казахстана</h2>
-            <p className="mt-1 text-xs text-slate-400">Ячейки 1° × 1° · состояние обновляется по год/месяцу</p>
+            <p className="mt-1 text-xs text-slate-400">Ячейки 1° × 1° · состояние обновляется по году и месяцу</p>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-2.5 py-1 text-xs text-amber-100">
             <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
@@ -226,6 +235,14 @@ export function NationalMapPage() {
             ))}
           </MapContainer>
         </div>
+      </section>
+
+      {cells.length === 0 ? <EmptyState title="Нет ячеек для отображения" description="Backend не вернул результатов для выбранного периода." /> : null}
+      <section className="grid gap-2 text-xs text-slate-400 sm:grid-cols-4" aria-label="Легенда карты">
+        <span className="inline-flex items-center gap-2"><i className="h-3 w-3 rounded-full bg-emerald-400" />Готово: низкий риск</span>
+        <span className="inline-flex items-center gap-2"><i className="h-3 w-3 rounded-full border-2 border-cyan-300 bg-slate-950" />Готово: сигнал сегментации</span>
+        <span className="inline-flex items-center gap-2"><i className="h-3 w-3 rounded-full bg-amber-400" />Готово: многосигнальный риск</span>
+        <span className="inline-flex items-center gap-2"><i className="h-3 w-3 rounded-full bg-slate-500" />Не обработано / нет данных</span>
       </section>
     </div>
   );
