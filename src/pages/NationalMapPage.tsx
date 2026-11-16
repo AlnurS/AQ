@@ -95,9 +95,9 @@ function CellMarker({ cell }: { cell: NationalGridCell }) {
   return (
     <CircleMarker center={[cell.latitude, cell.longitude]} radius={cell.status === "ready" ? 10 : 8} pathOptions={getPathOptions(cell)}>
       <Popup minWidth={260}>
-        <div className="space-y-2 text-sm text-slate-800">
+        <div className="space-y-2 text-sm text-slate-100">
           <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-2">
-            <span className="font-semibold text-slate-900">{cell.cell_id}</span>
+            <span className="font-semibold text-white">{cell.cell_id}</span>
             <span className="rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-700">
               {cell.status === "ready" ? "готово" : cell.status}
             </span>
@@ -122,8 +122,8 @@ function CellMarker({ cell }: { cell: NationalGridCell }) {
 
           {cell.drivers?.length ? (
             <div>
-              <p className="font-medium text-slate-800">Причины:</p>
-              <ul className="ml-4 list-disc space-y-1 text-slate-700">
+              <p className="font-medium text-slate-100">Причины:</p>
+              <ul className="ml-4 list-disc space-y-1 text-slate-200">
                 {cell.drivers.slice(0, 3).map((driver) => (
                   <li key={driver.key}>{driver.title}</li>
                 ))}
