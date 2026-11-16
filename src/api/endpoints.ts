@@ -68,8 +68,12 @@ export async function getMonitoringTimeline(locationId: string): Promise<Timelin
   return data;
 }
 
-export async function analyzeMonitoringLocation(locationId: string, year: number, month: number): Promise<AnalyzeMonitoringResponse> {
-  const { data } = await apiClient.post<AnalyzeMonitoringResponse>(`/api/monitoring/locations/${locationId}/analyze`, { year, month, enrich: false });
+export async function analyzeMonitoringLocation(locationId: string, year: number, period: "warm" | "cold"): Promise<AnalyzeMonitoringResponse> {
+  const { data } = await apiClient.post<AnalyzeMonitoringResponse>(
+    `/api/monitoring/locations/${locationId}/analyze`,
+    { year, period, enrich: false },
+    { timeout: 120_000 },
+  );
   return data;
 }
 

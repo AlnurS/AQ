@@ -9,7 +9,7 @@ import { PageLoader } from "../components/PageLoader";
 import type { NationalGridCell, NationalGridSummary } from "../types/api";
 import { formatCoordinate, formatPercent } from "../utils/formatters";
 
-const DEFAULT_YEAR = 2024;
+const DEFAULT_YEAR = 2025;
 const DEFAULT_MONTH = 9;
 
 const riskColors: Record<"low" | "medium" | "high" | "critical" | "missing", string> = {

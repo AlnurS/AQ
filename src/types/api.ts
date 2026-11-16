@@ -143,6 +143,7 @@ export interface MonitoringObservation {
   inference_run_id: string;
   year: number;
   month: number;
+  period: "month" | "warm" | "cold";
   drought_fraction: number;
   drought_pixel_count: number;
   total_pixel_count: number;

@@ -19,6 +19,21 @@ npm.cmd run build
 
 The frontend uses `VITE_API_BASE_URL` when set; otherwise it requests the backend at `http://127.0.0.1:8000`.
 
+## Public demonstration deployment
+
+The `Deploy to GitHub Pages` workflow builds the frontend from the repository root.
+In repository settings, enable Pages with **GitHub Actions** as the build source and
+set the Actions variable `VITE_API_BASE_URL` to the public Render API URL (for
+example, `https://your-service.onrender.com`) before deploying. The workflow uses
+the repository name as the Pages subpath, so React routes continue to work on a
+project site.
+
+The backend's public Render deployment is a demonstration: its free instance sleeps
+when idle, and local database updates and generated inference files are discarded
+when the instance restarts. The image starts with a sanitized national-grid snapshot.
+Earth Engine operations remain unavailable until credentials are configured securely
+in Render; do not put credentials in this repository or frontend variables.
+
 ## Primary routes
 
 - `/` redirects to `/monitoring`.
